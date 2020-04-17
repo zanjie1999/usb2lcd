@@ -78,7 +78,7 @@ def p(msg):
         #      num = 0
         #      time.sleep(sendSleep)
         theDevice.write(ord(c))
-        time.sleep(sendSleep)
+        # time.sleep(sendSleep)
 
 try:
     theDevice = ArduinoUsbDevice(idVendor=0x16c0, idProduct=0x05df)
@@ -96,8 +96,8 @@ def cpu_info():
 def mem_info():
     mem = psutil.virtual_memory()
     mem_per ='%.1f%%'% mem[2]
-    mem_total = str(int(mem[0]/1024/1024)) + 'M'
-    mem_used = str(int(mem[3]/1024/1024)) + 'M'
+    mem_total = '%.2fG'% (mem[0]/1024/1024/1024)
+    mem_used = '%.2fG'% (mem[3]/1024/1024/1024)
     info = {                                    
         'mem_per':mem_per,
         'mem_total':mem_total,
@@ -138,21 +138,35 @@ def network_info(s=1):
 
 
 if __name__ == "__main__":
+    t = True
     while True:
         cpu = cpu_info()
-        p("U:")
-        p(cpu['per'].ljust(6))
-        p("M:")
-        p(mem_info()["mem_per"].ljust(6))
-        # p("[")
-        # p(('=' * int(cpu['num'] * 0.14)).ljust(14))
-        # p("]")
-        net = network_info(2)
-        p("^:")
-        p(net["network_sent"].ljust(6))
-        p("v:")
-        p(net["network_recv"].ljust(6))
+        if t:
+            p("U:")
+            p(cpu['per'].ljust(6))
+        else:
+            p(time.strftime("%I:%M:%S", time.localtime()))
+        # p(mem_info()["mem_per"].ljust(6))
+        p(("M:" + mem_info()["mem_used"]).rjust(8))
+        if t:
+            net = network_info(1.227)
+            p(("^:" + net["network_sent"]).ljust(8))
+            p(("v:" + net["network_recv"]).rjust(8))
+        else:
+            p("[")
+            p(('=' * int(cpu['num'] * 0.14)).ljust(14))
+            p("]")
         p("\r")
+
+        btm = False
+        try:
+            while True:
+                theDevice.read()
+                btm = True
+        except:
+            pass
+        if btm:
+            t = not t
 
 
     
