@@ -80,11 +80,6 @@ def p(msg):
         theDevice.write(ord(c))
         # time.sleep(sendSleep)
 
-try:
-    theDevice = ArduinoUsbDevice(idVendor=0x16c0, idProduct=0x05df)
-except:
-    sys.exit("No DigiUSB Device Found")
-
 def cpu_info():
     num = psutil.cpu_percent(1)
     cpu = '%.1f%%'% num
@@ -140,33 +135,39 @@ def network_info(s=1):
 if __name__ == "__main__":
     t = True
     while True:
-        cpu = cpu_info()
-        if t:
-            p("U:")
-            p(cpu['per'].ljust(6))
-        else:
-            p(time.strftime("%I:%M:%S", time.localtime()))
-        # p(mem_info()["mem_per"].ljust(6))
-        p(("M:" + mem_info()["mem_used"]).rjust(8))
-        if t:
-            net = network_info(1.227)
-            p(("^:" + net["network_sent"]).ljust(8))
-            p(("v:" + net["network_recv"]).rjust(8))
-        else:
-            p("[")
-            p(('=' * int(cpu['num'] * 0.14)).ljust(14))
-            p("]")
-        p("\r")
-
-        btm = False
         try:
+            theDevice = ArduinoUsbDevice(idVendor=0x16c0, idProduct=0x05df)
             while True:
-                theDevice.read()
-                btm = True
+                cpu = cpu_info()
+                if t:
+                    p("U:")
+                    p(cpu['per'].ljust(6))
+                else:
+                    p(time.strftime("%I:%M:%S", time.localtime()))
+                # p(mem_info()["mem_per"].ljust(6))
+                p(("M:" + mem_info()["mem_used"]).rjust(8))
+                if t:
+                    net = network_info(1.227)
+                    p(("^:" + net["network_sent"]).ljust(8))
+                    p(("v:" + net["network_recv"]).rjust(8))
+                else:
+                    p("[")
+                    p(('=' * int(cpu['num'] * 0.14)).ljust(14))
+                    p("]")
+                p("\r")
+
+                btm = False
+                try:
+                    while True:
+                        theDevice.read()
+                        btm = True
+                except:
+                    pass
+                if btm:
+                    t = not t
         except:
-            pass
-        if btm:
-            t = not t
+            print("No DigiUSB Device Found")
+        time.sleep(5)
 
 
     
