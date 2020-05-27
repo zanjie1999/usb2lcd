@@ -12,11 +12,14 @@ import psutil
 sys.path.append("..")
 
 REQUEST_TYPE_SEND = usb.util.build_request_type(usb.util.CTRL_OUT,
-                                                usb.util.CTRL_TYPE_CLASS,
-                                                usb.util.CTRL_RECIPIENT_DEVICE)
+                                                
+usb.util.CTRL_TYPE_CLASS,
+                                                
+usb.util.CTRL_RECIPIENT_DEVICE)
 
 REQUEST_TYPE_RECEIVE = usb.util.build_request_type(
-    usb.util.CTRL_IN, usb.util.CTRL_TYPE_CLASS, usb.util.CTRL_RECIPIENT_DEVICE)
+    usb.util.CTRL_IN, usb.util.CTRL_TYPE_CLASS, 
+usb.util.CTRL_RECIPIENT_DEVICE)
 
 USBRQ_HID_GET_REPORT = 0x01
 USBRQ_HID_SET_REPORT = 0x09
@@ -65,7 +68,8 @@ class ArduinoUsbDevice(object):
         """
         """
         return self.device.ctrl_transfer(
-            request_type, request, (USB_HID_REPORT_TYPE_FEATURE << 8) | 0,
+            request_type, request, (USB_HID_REPORT_TYPE_FEATURE << 8) | 
+0,
             index, value)
 
 def p(msg):
@@ -137,8 +141,15 @@ if __name__ == "__main__":
     while True:
         try:
             theDevice = ArduinoUsbDevice(idVendor=0x16c0, idProduct=0x05df)
+            led = False
             while True:
                 cpu = cpu_info()
+                if cpu['num'] >= 70 and not led:
+                    p("¬")
+                    led = True
+                elif cpu['num'] < 70 and led:
+                    p("¬")
+                    led = False
                 if t:
                     p("U:")
                     p(cpu['per'].ljust(6))
@@ -152,7 +163,7 @@ if __name__ == "__main__":
                     p(("v:" + net["network_recv"]).rjust(8))
                 else:
                     p("[")
-                    p(('=' * int(cpu['num'] * 0.14)).ljust(14))
+                    p(('=' * int(cpu['num'] * 0.16)).ljust(14))
                     p("]")
                 p("\r")
 
@@ -165,9 +176,7 @@ if __name__ == "__main__":
                     pass
                 if btm:
                     t = not t
-        except:
-            print("No DigiUSB Device Found")
+        except Exception as e:
+            print(e)
         time.sleep(5)
 
-
-    
