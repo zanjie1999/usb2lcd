@@ -163,7 +163,7 @@ if __name__ == "__main__":
                     p(("v:" + net["network_recv"]).rjust(8))
                 else:
                     p("[")
-                    p(('=' * int(cpu['num'] * 0.16)).ljust(14))
+                    p(('=' * int(cpu['num'] * 0.14)).ljust(14))
                     p("]")
                 p("\r")
 
