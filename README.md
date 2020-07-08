@@ -1,4 +1,4 @@
-# Sparkle USB2LCD
+# Sparkle USB2LCD (LCD2USB)
 Use Tiny85 and LCD1602(Hitachi HD44780) to make a USB2LCD.
 
 Hardware connection image from internet:
