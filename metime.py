@@ -74,12 +74,15 @@ if __name__ == "__main__":
                 p("内存:")
                 p(mem_info()["mem_used"].ljust(7))
                 sp = network_info(1)
-                if sp["network_sent"] > sp["network_recv"]:
-                    p("↑")
-                    p(sp["network_sent"])
-                else:
+                if sp["network_sent"] == sp["network_recv"]:
+                    p("↕")
+                    p(sp["network_recv"])
+                elif sp["network_sent"] < sp["network_recv"]:
                     p("↓")
                     p(sp["network_recv"])
+                else:
+                    p("↑")
+                    p(sp["network_sent"])
                 p("M/s")
                 p("\n")
                 if s.recv(10) != b'ok\n':
