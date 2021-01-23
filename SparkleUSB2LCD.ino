@@ -7,7 +7,7 @@
 
 LiquidCrystal_I2C lcd(GPIO_ADDR, 16, 2); // set address & 16 chars / 2 lines
 boolean backlight = 0;
-boolean reverseBacklight = 1;
+boolean reverseBacklight = 0;
 
 void led(int isOn) {
   if (isOn) {
@@ -24,7 +24,6 @@ void led(int isOn) {
       lcd.noBacklight();
     }
     backlight = 0;
-    
   }
 }
 
@@ -32,7 +31,7 @@ void setup() {
   DigiUSB.begin();
   TinyWireM.begin();                    // initialize I2C lib - comment this out to use with standard arduinos
   lcd.init();                           // initialize the lcd
-  led(0);
+  led(1);
   lcd.print("Sparkle  USB2LCD");
   lcd.setCursor(0, 1);
   lcd.print("    cupinkie.com");
@@ -51,15 +50,15 @@ void loop() {
   int num = 0;
   // overflow
   boolean ovf = 0;
+  long lastMillis = 0;
   while (1) {
     if (DigiUSB.available()) {
       //something to read
       lastRead = DigiUSB.read();
+      lastMillis = millis();
       if (clearMsg) {
-        lcd.print("                ");
-        lcd.setCursor(4, 1);
-        lcd.print("            ");
-        lcd.setCursor(0, 0);
+        led(0);
+        lcd.clear();
         clearMsg = 0;
         if (DigiUSB.available()) {
           lastRead2 = DigiUSB.read();
@@ -115,11 +114,17 @@ void loop() {
           hasRead2 = 0;
         }
       }
-    } else {
-      if (digitalRead(1)) {
-        DigiUSB.write(1);
-      }
+    } else if (digitalRead(1)) {
+      DigiUSB.write(1);
+    } else if (lastMillis != -1 && millis() > lastMillis + 30000) {
+      // time out clear lcd
+      lcd.clear();
+      clearMsg = 0;
+      backlight = 0;
+      led(backlight);
+      lastMillis = -1;
     }
+    
     // refresh the usb port
     DigiUSB.refresh();
     //    delay(10);
