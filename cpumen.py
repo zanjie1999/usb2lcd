@@ -1,8 +1,8 @@
 #/usr/bin/python
 
-#
+# Sparkle USB to LCD cpumen
 # Written for PyUSB 1.0 (w/libusb 1.0.3)
-#
+# v2.0
 
 import usb, sys  # 1.0 not 0.4
 import time
@@ -85,7 +85,7 @@ def p(msg):
         # time.sleep(sendSleep)
 
 def cpu_info():
-    num = psutil.cpu_percent(1)
+    num = psutil.cpu_percent(0.5)
     cpu = '%.1f%%'% num
     return {
         'per':cpu,
@@ -142,26 +142,28 @@ if __name__ == "__main__":
         try:
             theDevice = ArduinoUsbDevice(idVendor=0x16c0, idProduct=0x05df)
             led = False
+            p("¬")
             while True:
                 cpu = cpu_info()
-                if cpu['num'] >= 70 and not led:
-                    p("¬")
-                    led = True
-                elif cpu['num'] < 70 and led:
-                    p("¬")
-                    led = False
+                # if cpu['num'] >= 70 and not led:
+                #     p("¬")
+                #     led = True
+                # elif cpu['num'] < 70 and led:
+                #     p("¬")
+                #     led = False
                 if t:
                     p("U:")
                     p(cpu['per'].ljust(6))
                 else:
                     p(time.strftime("%I:%M:%S", time.localtime()))
                 # p(mem_info()["mem_per"].ljust(6))
-                p(("M:" + mem_info()["mem_used"]).rjust(8))
                 if t:
-                    net = network_info(1.227)
-                    p(("^:" + net["network_sent"]).ljust(8))
+                    net = network_info(0.7)
+                    p(("^:" + net["network_sent"]).rjust(8))
+                    p(("M:" + mem_info()["mem_used"]).ljust(8))
                     p(("v:" + net["network_recv"]).rjust(8))
                 else:
+                    p(("M:" + mem_info()["mem_used"]).rjust(8))
                     p("[")
                     p(('=' * int(cpu['num'] * 0.14)).ljust(14))
                     p("]")
