@@ -6,30 +6,25 @@
 
 # 装依赖 python3 -m pip install pyusb
 
-import usb, os, subprocess  # 1.0 not 0.4
+import usb, os, subprocess
 import time
 
 # 远程端 openwrt ssh 命令
-sshOpCmd = "ssh root@192.168.100.52"
+sshOpCmd = "ssh -T root@op"
 # 显示网速的网卡名字
-netCardName = "eth0"
+netCardName = "ppp"
+
+# 刷新间隔 秒
+delay = 3
 
 sshConn = None
 bashConn = None
-lastCpu = ['1','1']
-lastNet = ['1','1']
+lastCpu = ['0','0']
+lastNet = ['0','0']
 
 
-REQUEST_TYPE_SEND = usb.util.build_request_type(usb.util.CTRL_OUT,
-                                                
-usb.util.CTRL_TYPE_CLASS,
-                                                
-usb.util.CTRL_RECIPIENT_DEVICE)
-
-REQUEST_TYPE_RECEIVE = usb.util.build_request_type(
-    usb.util.CTRL_IN, usb.util.CTRL_TYPE_CLASS, 
-usb.util.CTRL_RECIPIENT_DEVICE)
-
+REQUEST_TYPE_SEND = usb.util.build_request_type(usb.util.CTRL_OUT,usb.util.CTRL_TYPE_CLASS, usb.util.CTRL_RECIPIENT_DEVICE)
+REQUEST_TYPE_RECEIVE = usb.util.build_request_type(usb.util.CTRL_IN, usb.util.CTRL_TYPE_CLASS, usb.util.CTRL_RECIPIENT_DEVICE)
 USBRQ_HID_GET_REPORT = 0x01
 USBRQ_HID_SET_REPORT = 0x09
 USB_HID_REPORT_TYPE_FEATURE = 0x03
@@ -85,7 +80,7 @@ def bash(cmd):
 
 def cpuPercent():
     global lastCpu
-    now = ssh("awk '/cpu /{print $2+$4,$2+$4+$5}' /proc/stat").split(' ')
+    now = bash("awk '/cpu /{print $2+$4,$2+$4+$5}' /proc/stat").split(' ')
     percent = (float(now[0]) - float(lastCpu[0])) / (float(now[1]) - float(lastCpu[1])) * 100
     lastCpu[0] = now[0]
     lastCpu[1] = now[1]
@@ -94,13 +89,16 @@ def cpuPercent():
 def netSpeed():
     global lastNet
     now = ssh("awk '/" + netCardName + "/{print $2,$10}' /proc/net/dev").split(' ')
-    speed = [(float(now[0]) - float(lastNet[0])) / 1024, (float(now[1]) - float(lastNet[1])) / 1024]
+    speed = [(float(now[0]) - float(lastNet[0])) / 1024 / 1024, (float(now[1]) - float(lastNet[1])) / 1024 / 1024]
     lastNet[0] = now[0]
     lastNet[1] = now[1]
     return speed
 
 def cpuTemp():
-    return float(ssh("cat /sys/class/thermal/thermal_zone0/temp")) / 1000
+    return float(bash("cat /sys/class/thermal/thermal_zone1/temp")) / 1000
+
+def memUse():
+    return bash("free -m|awk '/M/{print $3/1024}'")
 
 if __name__ == "__main__":
     t = True
@@ -112,21 +110,25 @@ if __name__ == "__main__":
                 cpu = cpuPercent()
                 temp = cpuTemp()
                 if t:
-                    p("U:")
-                    p(str(cpu).ljust(6))
+                    p("U:" + str(cpu)[:5] + '% ')
                 else:
-                    p(time.strftime("%I:%M:%S", time.localtime()))
+                    p(time.strftime("%I:%M:%S ", time.localtime()))
+                    p(memUse()[:3] + "G ")
+                    p(str(temp)[:2])
                 if t:
                     net = netSpeed()
-                    p(("^:" + net[1]).rjust(8))
-                    p(("T:" + temp +"C").ljust(8))
-                    p(("v:" + net[0]).rjust(8))
+                    p("^" + str(net[1] / delay)[:6])
+                    p(str(temp)[:2] + "c ")
+                    p(memUse()[:3] + "G")
+                    p(" v" + str(net[0] / delay)[:6])
                 else:
-                    p(("T:" + temp +"C").rjust(8))
                     p("[")
                     p(('=' * int(cpu * 0.14)).ljust(14))
                     p("]")
                 p("\r")
+
+                # 刷新需要时间
+                time.sleep(0.77 + delay -1 if t else 0.77)
 
                 # 按键切换
                 btm = False
@@ -138,6 +140,7 @@ if __name__ == "__main__":
                     pass
                 if btm:
                     t = not t
+                
         except Exception as e:
             print(e)
             time.sleep(10)
