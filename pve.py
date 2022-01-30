@@ -105,6 +105,8 @@ if __name__ == "__main__":
     while True:
         try:
             theDevice = ArduinoUsbDevice(idVendor=0x16c0, idProduct=0x05df)
+            bashConn = subprocess.Popen('bash', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
+            sshConn = subprocess.Popen(sshOpCmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
             p("¬")
             while True:
                 cpu = cpuPercent()
