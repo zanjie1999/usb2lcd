@@ -8,6 +8,7 @@
 
 import usb, os, subprocess
 import time
+import timeout_decorator
 
 # 远程端 openwrt ssh 命令
 sshOpCmd = "ssh -T root@op"
@@ -62,18 +63,16 @@ def p(msg):
     for c in msg:
         theDevice.write(ord(c))
 
+@timeout_decorator.timeout(5)
 def ssh(cmd):
     global sshConn
-    if sshConn is None:
-        sshConn = subprocess.Popen(sshOpCmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
     sshConn.stdin.write(cmd+"\n")
     sshConn.stdin.flush()
     return os.read(sshConn.stdout.fileno(), 10240).decode()[:-1]
 
+@timeout_decorator.timeout(5)
 def bash(cmd):
     global bashConn
-    if bashConn is None:
-        bashConn = subprocess.Popen('bash', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
     bashConn.stdin.write(cmd+"\n")
     bashConn.stdin.flush()
     return os.read(bashConn.stdout.fileno(), 10240).decode()[:-1]
