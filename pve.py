@@ -14,6 +14,8 @@ import timeout_decorator
 sshOpCmd = "ssh -T root@op"
 # 显示网速的网卡名字
 netCardName = "ppp"
+# 两张网卡的名字用|分隔 不用这功能就留空
+netCardName2 = "eth3|ppp"
 
 # 刷新间隔 秒
 delay = 3
@@ -21,7 +23,7 @@ delay = 3
 sshConn = None
 bashConn = None
 lastCpu = ['0','0']
-lastNet = ['0','0']
+lastNet = ['0','0','0','0']
 
 
 REQUEST_TYPE_SEND = usb.util.build_request_type(usb.util.CTRL_OUT,usb.util.CTRL_TYPE_CLASS, usb.util.CTRL_RECIPIENT_DEVICE)
@@ -68,6 +70,7 @@ def ssh(cmd):
     global sshConn
     sshConn.stdin.write(cmd+"\n")
     sshConn.stdin.flush()
+    time.sleep(0.01)
     return os.read(sshConn.stdout.fileno(), 10240).decode()[:-1]
 
 @timeout_decorator.timeout(5)
@@ -75,6 +78,7 @@ def bash(cmd):
     global bashConn
     bashConn.stdin.write(cmd+"\n")
     bashConn.stdin.flush()
+    time.sleep(0.01)
     return os.read(bashConn.stdout.fileno(), 10240).decode()[:-1]
 
 def cpuPercent():
@@ -88,9 +92,19 @@ def cpuPercent():
 def netSpeed():
     global lastNet
     now = ssh("awk '/" + netCardName + "/{print $2,$10}' /proc/net/dev").split(' ')
-    speed = [(float(now[0]) - float(lastNet[0])) / 1024 / 1024, (float(now[1]) - float(lastNet[1])) / 1024 / 1024]
+    speed = [(float(now[0]) - float(lastNet[2])) / 1024 / 1024, (float(now[1]) - float(lastNet[3])) / 1024 / 1024]
+    lastNet[2] = now[0]
+    lastNet[3] = now[1]
+    return speed
+
+def netSpeed2():
+    global lastNet
+    now = ssh("awk '/" + netCardName2 + "/{printf $2\" \"$10\" \"}' /proc/net/dev").split(' ')
+    speed = [(float(now[0]) - float(lastNet[0])) / 1024 / 1024, (float(now[1]) - float(lastNet[1])) / 1024 / 1024, (float(now[2]) - float(lastNet[2])) / 1024 / 1024, (float(now[3]) - float(lastNet[3])) / 1024 / 1024]
     lastNet[0] = now[0]
     lastNet[1] = now[1]
+    lastNet[2] = now[2]
+    lastNet[3] = now[3]
     return speed
 
 def cpuTemp():
@@ -99,8 +113,11 @@ def cpuTemp():
 def memUse():
     return bash("free -m|awk '/M/{print $3/1024}'")
 
+def loadavg():
+    return bash("awk '{print $1}' /proc/loadavg")
+
 if __name__ == "__main__":
-    t = True
+    t = 2 if bool(netCardName2) else 1
     while True:
         try:
             theDevice = ArduinoUsbDevice(idVendor=0x16c0, idProduct=0x05df)
@@ -110,26 +127,41 @@ if __name__ == "__main__":
             while True:
                 cpu = cpuPercent()
                 temp = cpuTemp()
-                if t:
-                    p("U:" + str(cpu)[:5] + '% ')
-                else:
-                    p(time.strftime("%I:%M:%S ", time.localtime()))
-                    p(memUse()[:3] + "G ")
-                    p(str(temp)[:2])
-                if t:
+                if t==1:
                     net = netSpeed()
+                    p("U:" + str(cpu)[:5] + '% ')
                     p("^" + str(net[1] / delay)[:6])
                     p(str(temp)[:2] + "c ")
                     p(memUse()[:3] + "G")
                     p(" v" + str(net[0] / delay)[:6])
-                else:
+                elif t==2:
+                    net = netSpeed2()
+                    p(str(net[0] / delay)[:4])
+                    p('^')
+                    p(str(net[3] / delay)[:4])
+                    p(' ')
+                    p(str(temp)[:2])
+                    p('c')
+                    p(loadavg()[:3])
+                    p(str(net[1] / delay)[:4])
+                    p('v')
+                    p(str(net[2] / delay)[:5])
+                    p(' ')
+                    p(str(cpu)[:4])
+                    p('%')
+
+                elif t==3:
+                    p(time.strftime("%I:%M:%S ", time.localtime()))
+                    p(memUse()[:3] + "G ")
+                    p(str(temp)[:2])
                     p("[")
                     p(('=' * int(cpu * 0.14)).ljust(14))
                     p("]")
+
                 p("\r")
 
                 # 刷新需要时间
-                time.sleep(0.77 + delay -1 if t else 0.77)
+                time.sleep(0.75 + delay -1 if t!=3 else 0.77)
 
                 # 按键切换
                 btm = False
@@ -140,7 +172,12 @@ if __name__ == "__main__":
                 except:
                     pass
                 if btm:
-                    t = not t
+                    if t == 3:
+                        t=1
+                    elif bool(netCardName2):
+                        t+=1
+                    else:
+                        t=3
                 
         except Exception as e:
             print(e)
