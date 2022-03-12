@@ -1,6 +1,6 @@
 # coding=utf-8
 
-# 在pve虚拟化路由器上的lcd2usb设备 
+# 在openwrt路由器上的lcd2usb设备 
 # Sparkle 20220125
 # v1.0
 
@@ -8,14 +8,14 @@
 
 import usb, os, subprocess
 import time
-import timeout_decorator
+#import timeout_decorator
 
 # 远程端 openwrt ssh 命令
 sshOpCmd = "ssh -T root@op"
 # 显示网速的网卡名字
 netCardName = "ppp"
 # 两张网卡的名字用|分隔 不用这功能就留空
-netCardName2 = "eth3|eth4"
+netCardName2 = "eth0:|eth3:"
 
 # 刷新间隔 秒
 delay = 3
@@ -23,7 +23,9 @@ delay = 3
 sshConn = None
 bashConn = None
 lastCpu = ['0','0']
-lastNet = ['0','0','0','0']
+lastNet = ['0','0']
+lastNet2 = ['0','0','0','0']
+
 
 
 REQUEST_TYPE_SEND = usb.util.build_request_type(usb.util.CTRL_OUT,usb.util.CTRL_TYPE_CLASS, usb.util.CTRL_RECIPIENT_DEVICE)
@@ -65,7 +67,7 @@ def p(msg):
     for c in msg:
         theDevice.write(ord(c))
 
-@timeout_decorator.timeout(5)
+#@timeout_decorator.timeout(5)
 def ssh(cmd):
     global sshConn
     sshConn.stdin.write(cmd+"\n")
@@ -73,7 +75,7 @@ def ssh(cmd):
     time.sleep(0.01)
     return os.read(sshConn.stdout.fileno(), 10240).decode()[:-1]
 
-@timeout_decorator.timeout(5)
+#@timeout_decorator.timeout(5)
 def bash(cmd):
     global bashConn
     bashConn.stdin.write(cmd+"\n")
@@ -91,20 +93,20 @@ def cpuPercent():
 
 def netSpeed():
     global lastNet
-    now = ssh("awk '/" + netCardName + "/{print $2,$10}' /proc/net/dev").split(' ')
-    speed = [(float(now[0]) - float(lastNet[2])) / 1024 / 1024, (float(now[1]) - float(lastNet[3])) / 1024 / 1024]
-    lastNet[2] = now[0]
-    lastNet[3] = now[1]
+    now = bash("awk '/" + netCardName + "/{print $2,$10}' /proc/net/dev").split(' ')
+    speed = [(float(now[0]) - float(lastNet[0])) / 1024 / 1024, (float(now[1]) - float(lastNet[1])) / 1024 / 1024]
+    lastNet[0] = now[0]
+    lastNet[1] = now[1]
     return speed
 
 def netSpeed2():
-    global lastNet
-    now = ssh("awk '/" + netCardName2 + "/{printf $2\" \"$10\" \"}' /proc/net/dev").split(' ')
-    speed = [(float(now[0]) - float(lastNet[0])) / 1024 / 1024, (float(now[1]) - float(lastNet[1])) / 1024 / 1024, (float(now[2]) - float(lastNet[2])) / 1024 / 1024, (float(now[3]) - float(lastNet[3])) / 1024 / 1024]
-    lastNet[0] = now[0]
-    lastNet[1] = now[1]
-    lastNet[2] = now[2]
-    lastNet[3] = now[3]
+    global lastNet2
+    now = bash("awk '/" + netCardName2 + "/{printf $2\" \"$10\" \"}' /proc/net/dev").split(' ')
+    speed = [(float(now[0]) - float(lastNet2[0])) / 1024 / 1024, (float(now[1]) - float(lastNet2[1])) / 1024 / 1024, (float(now[2]) - float(lastNet2[2])) / 1024 / 1024, (float(now[3]) - float(lastNet2[3])) / 1024 / 1024]
+    lastNet2[0] = now[0]
+    lastNet2[1] = now[1]
+    lastNet2[2] = now[2]
+    lastNet2[3] = now[3]
     return speed
 
 def cpuTemp():
@@ -126,7 +128,7 @@ if __name__ == "__main__":
             if sshConn:
                 sshConn.terminate()
             bashConn = subprocess.Popen('bash', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
-            sshConn = subprocess.Popen(sshOpCmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
+            #sshConn = subprocess.Popen(sshOpCmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True)
             p("¬")
             while True:
                 cpu = cpuPercent()
@@ -140,16 +142,16 @@ if __name__ == "__main__":
                     p(" v" + str(net[0] / delay)[:6])
                 elif t==2:
                     net = netSpeed2()
-                    p(str(net[0] / delay)[:4])
+                    p(str(net[2] / delay)[:4])
                     p('^')
-                    p(str(net[3] / delay)[:4])
+                    p(str(net[1] / delay)[:4])
                     p(' ')
                     p(str(temp)[:2])
                     p('c')
                     p(loadavg()[:3])
-                    p(str(net[1] / delay)[:4])
+                    p(str(net[3] / delay)[:4])
                     p('v')
-                    p(str(net[2] / delay)[:5])
+                    p(str(net[0] / delay)[:5])
                     p(' ')
                     p(str(cpu)[:4])
                     p('%')
