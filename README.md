@@ -8,7 +8,10 @@ need Python3:
 
 `python3 -m pip install psutil pyusb`
 
+[中文直达](https://space.bilibili.com/9992930/search/video?keyword=USB2LCD)
+
 ----------
+
 ## How to use
 1. Flash `SparkleUSB2LCD.ino` to your ATiny85 with Arduino
 2. Choose a program below to use
