@@ -2,7 +2,7 @@
 
 # 在openwrt路由器上的lcd2usb设备 按键执行shell版
 # Sparkle 20230109
-# v1.0
+# v2.0
 
 # 装依赖 python3 -m pip install pyusb
 
@@ -22,10 +22,12 @@ delay = 3
 
 # 按键切换长按执行的命令
 cmds = [
-    'echo restart|xargs /etc/init.d/network && echo Restart OK',
+    'service network restart',
+    'service AdGuardHome restart',
     'docker start ubuntu',
     'docker stop ubuntu',
     'docker restart wxedge2',
+    'date "+%Y-%m-%d      %H:%M:%S"'
 ]
 
 sshConn = None
@@ -183,40 +185,42 @@ if __name__ == "__main__":
                 else:
                     time.sleep(0.5)
 
-                # 按键切换
+                # 按键切换 1=250ms 因为能除尽也符合性能
                 btm = 0
                 try:
                     while True:
                         theDevice.read()
-                        if not btm:
-                            btm = time.time()
+                        btm+=1
                 except:
-                    if btm:
-                        btm = time.time() - btm
-                if btm and cmdsIndex == -1:
-                    cmdsIndex = 0
-                    p('> ')
-                    p(cmds[cmdsIndex][:30].ljust(30))
-                    p("\r")
-                    # if t == 3:
-                    #     t=1
-                    # elif bool(netCardName2):
-                    #     t+=1
-                    # else:
-                    #     t=3
-                elif btm > 1.5:
-                    # 长按执行
-                    p('\r Run... \r')
-                    out = bash(cmds[cmdsIndex])
-                    print(out)
-                    p(out[:32].ljust(32))
-                    time.sleep(10)
-                    cmdsIndex = -1
-                elif btm:
-                    cmdsIndex = cmdsIndex + 1 if cmdsIndex < len(cmds) -1 else -1
-                    p('> ')
-                    p(cmds[cmdsIndex][:30].ljust(30))
-                    p("\r")
+                    pass
+
+                if btm:
+                    print(btm)
+                    if cmdsIndex == -1:
+                        cmdsIndex = 0
+                        p('> ')
+                        p(cmds[cmdsIndex][:30].ljust(30))
+                        p("\r")
+                    elif 4 < btm and btm < 12:
+                        # 长按执行 1-3s
+                        p('\r> Run...  \r')
+                        print(cmds[cmdsIndex])
+                        out = bash(cmds[cmdsIndex])
+                        print(out)
+                        p(out[:32].ljust(32))
+                        time.sleep(10)
+                        cmdsIndex = -1
+                    elif 12 < btm:
+                        # 超时退出
+                        cmdsIndex = -1
+                    elif cmdsIndex < len(cmds) - 1:
+                        cmdsIndex += 1
+                        p('> ')
+                        p(cmds[cmdsIndex][:30].ljust(30))
+                        p("\r")
+                    else:
+                        cmdsIndex = -1
+
                 
         except Exception as e:
             print(e)
