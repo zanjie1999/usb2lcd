@@ -116,7 +116,7 @@ void loop() {
       }
     } else if (digitalRead(1)) {
       DigiUSB.write(1);
-      delay(100);
+      delay(250);
     } else if (lastMillis != -1 && millis() > lastMillis + 30000) {
       // time out clear lcd
       lcd.clear();
