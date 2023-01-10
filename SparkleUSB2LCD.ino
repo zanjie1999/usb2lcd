@@ -34,7 +34,7 @@ void setup() {
   led(1);
   lcd.print("Sparkle  USB2LCD");
   lcd.setCursor(0, 1);
-  lcd.print("    cupinkie.com");
+  lcd.print("   zyyme.com    ");
   lcd.setCursor(0, 0);
 }
 
@@ -116,6 +116,7 @@ void loop() {
       }
     } else if (digitalRead(1)) {
       DigiUSB.write(1);
+      delay(100);
     } else if (lastMillis != -1 && millis() > lastMillis + 30000) {
       // time out clear lcd
       lcd.clear();
