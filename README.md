@@ -24,7 +24,7 @@ edit file to config
 
 ### Openwrt `op.py`
 install `python3` and `python3-pip`  
-edit file to config
+edit file to config, if you use ash, you need change 'bash' to 'ash'
 
 #### If you use Openwrt with `opShell.py`  
 edit `/usr/bin/service`
