@@ -2,12 +2,13 @@
 
 # 在openwrt路由器上的lcd2usb设备 按键执行shell版
 # Sparkle 20230109
-# v2.0
+# v2.3
 
 # 装依赖 python3 -m pip install pyusb
 
 import usb, os, subprocess
 import time
+import traceback
 #import timeout_decorator
 
 # 远程端 openwrt ssh 命令   ssh -T 用户名@ip
@@ -30,13 +31,21 @@ cmds = [
     'date "+%Y-%m-%d      %H:%M:%S"'
 ]
 
+# 测试展示所有字符
+# asciiStr = ' '
+# for i in range(0, 256):
+#     if len(asciiStr) == 31:
+#         cmds.append(asciiStr)
+#         asciiStr = ' '
+#     elif i < 128 or 159 < i:
+#         asciiStr += chr(i)
+# cmds.append(asciiStr)
+
 sshConn = None
 bashConn = None
 lastCpu = ['0','0']
 lastNet = ['0','0']
 lastNet2 = ['0','0','0','0']
-
-
 
 REQUEST_TYPE_SEND = usb.util.build_request_type(usb.util.CTRL_OUT,usb.util.CTRL_TYPE_CLASS, usb.util.CTRL_RECIPIENT_DEVICE)
 REQUEST_TYPE_RECEIVE = usb.util.build_request_type(usb.util.CTRL_IN, usb.util.CTRL_TYPE_CLASS, usb.util.CTRL_RECIPIENT_DEVICE)
@@ -151,7 +160,7 @@ if __name__ == "__main__":
                         net = netSpeed()
                         p("U:" + str(cpu)[:5] + '% ')
                         p("^" + str(net[1] / delay)[:6])
-                        p(str(temp)[:2] + "c ")
+                        p(str(temp)[:2] + "\xdf ")
                         p(memUse()[:3] + "G")
                         p(" v" + str(net[0] / delay)[:6])
                     elif t==2:
@@ -161,7 +170,7 @@ if __name__ == "__main__":
                         p(str(net[1] / delay)[:4])
                         p(' ')
                         p(str(temp)[:2])
-                        p('c')
+                        p('\xdf')
                         p(loadavg()[:3])
                         p(str(net[3] / delay)[:4])
                         p('v')
@@ -174,9 +183,7 @@ if __name__ == "__main__":
                         p(time.strftime("%I:%M:%S ", time.localtime()))
                         p(memUse()[:3] + "G ")
                         p(str(temp)[:2])
-                        p("[")
-                        p(('=' * int(cpu * 0.14)).ljust(14))
-                        p("]")
+                        p(('\xff' * int(cpu * 0.16) + str(cpu)[:5] + '%').ljust(16)[:16])
 
                     p("\r")
 
@@ -196,33 +203,40 @@ if __name__ == "__main__":
 
                 if btm:
                     print(btm)
-                    if cmdsIndex == -1:
+                    if cmdsIndex == -1 and 3 < btm:
+                        if t == 3:
+                            t=1
+                        elif bool(netCardName2):
+                            t+=1
+                        else:
+                            t=3
+                    elif cmdsIndex == -1:
                         cmdsIndex = 0
-                        p('> ')
-                        p(cmds[cmdsIndex][:30].ljust(30))
+                        p('\x7e')
+                        p(cmds[cmdsIndex][:31].ljust(31))
                         p("\r")
-                    elif 4 < btm and btm < 12:
+                    elif 3 < btm and btm < 11:
                         # 长按执行 1-3s
-                        p('\r> Run...  \r')
+                        p('\r\x7eRun...  \r')
                         print(cmds[cmdsIndex])
                         out = bash(cmds[cmdsIndex])
                         print(out)
                         p(out[:32].ljust(32))
                         time.sleep(10)
                         cmdsIndex = -1
-                    elif 12 < btm:
+                    elif 11 < btm:
                         # 超时退出
                         cmdsIndex = -1
                     elif cmdsIndex < len(cmds) - 1:
                         cmdsIndex += 1
-                        p('> ')
-                        p(cmds[cmdsIndex][:30].ljust(30))
+                        p('\x7e')
+                        p(cmds[cmdsIndex][:31].ljust(31))
                         p("\r")
                     else:
                         cmdsIndex = -1
 
                 
         except Exception as e:
-            print(e)
+            traceback.print_exc()
             time.sleep(10)
 
