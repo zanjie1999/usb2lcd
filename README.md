@@ -42,5 +42,5 @@ or you can run `/etc/init.d/network restart` as `echo restart|xargs /etc/init.d/
 
 ## font ascii for lcd
 ![image](https://user-images.githubusercontent.com/16502567/211736311-3740431e-bba9-4aca-b979-d2e0f4fafdb8.png)  
-such as "right arrow" font is `00011110`  
-then you can use `chr(0b00011110)` or `'\x1e'` in program, the "right arrow" will print to screen
+such as "right arrow" font is `01111110`  
+then you can use `chr(01111110)` or `'\x7e'` in program, the "right arrow" will print to screen
